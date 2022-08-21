@@ -59,5 +59,3 @@ window.addEventListener("load", function () {
   }
   animate()
 })
-
-///workingdsadsa
