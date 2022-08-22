@@ -7,12 +7,37 @@ window.addEventListener("load", function () {
   class InputHandler {
     constructor(game) {
       this.game = game
-      window.addEventListener("keydown", function (event) {
-        console.log(event.key)
+      window.addEventListener("keydown", (event) => {
+        if (
+          (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+          this.game.keys.indexOf(event.key) === -1
+        ) {
+          this.game.keys.push(event.key)
+          console.log(this.game.keys)
+        }
+      })
+      window.addEventListener("keyup", (event) => {
+        if (this.game.keys.indexOf(event.key) > -1) {
+          this.game.keys.splice(this.game.keys.indexOf(event.key), 1)
+          console.log(this.game.keys)
+        }
       })
     }
   }
-  class Projectile {}
+  class Projectile {
+    constructor(game, x, y) {
+      this.game = game
+      this.x = x
+      this.y = y
+      this.width = 10
+      this.height = 3
+      this.speed = 3
+      this.markedForDestruction = false
+    }
+    update() {
+      this.x += this.speed
+    }
+  }
   class Particle {}
   class Player {
     constructor(game) {
@@ -21,9 +46,13 @@ window.addEventListener("load", function () {
       this.height = 190
       this.x = 20
       this.y = 120
-      this.speedY = 1
+      this.speedY = 0
+      this.maxSpeed = 3
     }
     update() {
+      if (this.game.keys.includes("ArrowUp")) this.speedY = -this.maxSpeed
+      else if (this.game.keys.includes("ArrowDown")) this.speedY = this.maxSpeed
+      else this.speedY = 0
       this.y += this.speedY
     }
     draw(context) {
@@ -40,6 +69,7 @@ window.addEventListener("load", function () {
       this.height = height
       this.player = new Player(this)
       this.input = new InputHandler(this)
+      this.keys = []
     }
     update() {
       this.player.update()
