@@ -15,6 +15,8 @@ window.addEventListener("load", function () {
           this.game.keys.push(event.key)
         } else if (event.key === " ") {
           this.game.player.shootTop()
+        } else if (event.key === "d") {
+          this.game.debug = !this.game.debug
         }
       })
       window.addEventListener("keyup", (event) => {
@@ -50,10 +52,14 @@ window.addEventListener("load", function () {
       this.width = 120
       this.height = 190
       this.x = 20
-      this.y = 120
+      this.y = 100
+      this.frameX = 0
+      this.frameY = 0
+      this.maxFrame = 37
       this.speedY = 0
       this.maxSpeed = 3
       this.projectiles = []
+      this.image = document.getElementById("player")
     }
     update() {
       if (this.game.keys.includes("ArrowUp")) this.speedY = -this.maxSpeed
@@ -67,10 +73,28 @@ window.addEventListener("load", function () {
       this.projectiles = this.projectiles.filter(
         (projectile) => !projectile.markedForDestruction
       )
+      // handle sprite animation
+      if (this.frameX < this.maxFrame) {
+        this.frameX++
+      } else {
+        this.frameX = 0
+      }
     }
     draw(context) {
-      context.fillStyle = "black"
-      context.fillRect(this.x, this.y, this.width, this.height)
+      if (this.game.debug) {
+        context.strokeRect(this.x, this.y, this.width, this.height)
+      }
+      context.drawImage(
+        this.image,
+        this.frameX * this.width,
+        this.frameY * this.height,
+        this.width,
+        this.height,
+        this.x,
+        this.y,
+        this.width,
+        this.height
+      )
       this.projectiles.forEach((projectile) => {
         projectile.draw(context)
       })
@@ -111,11 +135,49 @@ window.addEventListener("load", function () {
       this.width = 228 * 0.2
       this.height = 169 * 0.2
       this.y = Math.random() * (this.game.height * 0.9 - this.height)
+      
     }
   }
 
-  class Layer {}
-  class Background {}
+  class Layer {
+    constructor(game, image, speedModifier) {
+      this.game = game
+      this.image = image
+      this.speedModifier = speedModifier
+      this.width = 1768
+      this.height = 500
+      this.x = 0
+      this.y = 0
+    }
+    update() {
+      if (this.x <= -this.width) this.x = 0
+      this.x -= this.game.speed * this.speedModifier
+    }
+    draw(context) {
+      context.drawImage(this.image, this.x, this.y)
+      context.drawImage(this.image, this.x + this.width, this.y)
+    }
+  }
+  class Background {
+    constructor(game) {
+      this.game = game
+      this.image1 = document.getElementById("layer1")
+      this.image2 = document.getElementById("layer2")
+      this.image3 = document.getElementById("layer3")
+      this.image4 = document.getElementById("layer4")
+      this.layer1 = new Layer(this.game, this.image1, 0.2)
+      this.layer2 = new Layer(this.game, this.image2, 0.4)
+      this.layer3 = new Layer(this.game, this.image3, 1)
+      this.layer4 = new Layer(this.game, this.image4, 1.5)
+      this.layers = [this.layer1, this.layer2, this.layer3]
+    }
+    update() {
+      this.layers.forEach((layer) => layer.update())
+    }
+    draw(context) {
+      this.layers.forEach((layer) => layer.draw(context))
+    }
+  }
   class UI {
     constructor(game) {
       this.game = game
@@ -171,6 +233,7 @@ window.addEventListener("load", function () {
     constructor(width, height) {
       this.width = width
       this.height = height
+      this.background = new Background(this)
       this.player = new Player(this)
       this.input = new InputHandler(this)
       this.UI = new UI(this)
@@ -186,11 +249,15 @@ window.addEventListener("load", function () {
       this.score = 0
       this.winningScore = 10
       this.gameTime = 0
-      this.timeLimit = 5000
+      this.timeLimit = 15000
+      this.speed = 1
+      this.debug = true
     }
     update(deltaTime) {
       if (!this.gameOver) this.gameTime += deltaTime
       if (this.gameTime > this.timeLimit) this.gameOver = true
+      this.background.update()
+      this.background.layer4.update()
       this.player.update()
       if (this.ammoTimer > this.ammoInterval) {
         if (this.ammo < this.maxAmmo) this.ammo++
@@ -224,11 +291,13 @@ window.addEventListener("load", function () {
       }
     }
     draw(context) {
+      this.background.draw(context)
       this.player.draw(context)
       this.UI.draw(context)
       this.enemies.forEach((enemy) => {
         enemy.draw(context)
       })
+      this.background.layer4.draw(context)
     }
     addEnemy() {
       this.enemies.push(new Angler1(this))
