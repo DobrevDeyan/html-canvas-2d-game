@@ -1,7 +1,7 @@
 window.addEventListener("load", function () {
   const canvas = document.getElementById("canvas-one")
   const ctx = canvas.getContext("2d")
-  canvas.width = 700
+  canvas.width = 800
   canvas.height = 500
 
   class InputHandler {
@@ -35,7 +35,7 @@ window.addEventListener("load", function () {
       this.height = 3
       this.speed = 3
       this.markedForDestruction = false
-      this.image = document.getElementById("projectile ")
+      this.image = document.getElementById("projectile")
     }
     update() {
       this.x += this.speed
@@ -47,7 +47,47 @@ window.addEventListener("load", function () {
       // context.fillRect(this.x, this.y, this.width, this.height)
     }
   }
-  class Particle {}
+  class Particle {
+    constructor(game, x, y) {
+      this.game = game
+      this.x = x
+      this.y = y
+      this.image = document.getElementById("gears")
+      this.frameX = Math.floor(Math.random() * 3)
+      this.frameY = Math.floor(Math.random() * 3)
+      this.spriteSize = 50
+      this.sizeModifier = (Math.random() * 0.5 + 0.5).toFixed(1)
+      this.size = this.spriteSize * this.sizeModifier
+      this.speedX = Math.random() * 6 - 3
+      this.speedY = Math.random() * -15
+      this.gravity = 0.5
+      this.markedForDestruction = false
+      this.angle = 0
+      this.va = Math.random() * 0.2 - 0.1
+    }
+    update() {
+      this.angle += this.va
+      this.speedY += this.gravity
+      this.x -= this.speedX
+      this.y += this.speedY
+      if (this.y > this.game.height + this.size || this.x < 0 - this.size) {
+        this.markedForDestruction = true
+      }
+    }
+    draw(context) {
+      context.drawImage(
+        this.image,
+        this.frameX * this.spriteSize,
+        this.frameY * this.spriteSize,
+        this.spriteSize,
+        this.spriteSize,
+        this.x,
+        this.y,
+        this.size,
+        this.size
+      )
+    }
+  }
   class Player {
     constructor(game) {
       this.game = game
@@ -71,6 +111,12 @@ window.addEventListener("load", function () {
       else if (this.game.keys.includes("ArrowDown")) this.speedY = this.maxSpeed
       else this.speedY = 0
       this.y += this.speedY
+      // vertical boundaries
+      if (this.y > this.game.height - this.height * 0.5) {
+        this.y = this.game.height - this.height * 0.5
+      } else if (this.y < -this.height * 0.5) {
+        this.y = -this.height * 0.5
+      }
       //handle projectiles
       this.projectiles.forEach((projectile) => {
         projectile.update()
@@ -174,8 +220,10 @@ window.addEventListener("load", function () {
         this.width,
         this.height
       )
-      context.font = "20px Helvetica"
-      context.fillText(this.lives, this.x, this.y)
+      if (this.game.debug) {
+        context.font = "20px Helvetica"
+        context.fillText(this.lives, this.x, this.y)
+      }
     }
   }
   class Angler1 extends Enemy {
@@ -258,7 +306,7 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game
       this.fontSize = 25
-      this.fontFamily = "Helvetica"
+      this.fontFamily = "Bangers"
       this.color = "white"
     }
     draw(context) {
@@ -279,23 +327,23 @@ window.addEventListener("load", function () {
         let messages1
         let messages2
         if (this.game.score > this.game.winningScore) {
-          messages1 = "You win"
-          messages2 = "Well done"
+          messages1 = "Most wondrous"
+          messages2 = "Well done explorer"
         } else {
-          messages1 = "You lost"
+          messages1 = "You lose"
           messages2 = "Try again next time"
         }
-        context.font = "50px " + this.fontFamily
+        context.font = "70px " + this.fontFamily
         context.fillText(
           messages1,
           this.game.width * 0.5,
-          this.game.height * 0.5 - 40
+          this.game.height * 0.5 - 20
         )
         context.font = "25px " + this.fontFamily
         context.fillText(
           messages2,
           this.game.width * 0.5,
-          this.game.height * 0.5 + 40
+          this.game.height * 0.5 + 20
         )
       }
       // ammo
@@ -316,6 +364,7 @@ window.addEventListener("load", function () {
       this.UI = new UI(this)
       this.keys = []
       this.enemies = []
+      this.particles = []
       this.enemyTimer = 0
       this.enemyInterval = 1000
       this.ammo = 20
@@ -324,11 +373,11 @@ window.addEventListener("load", function () {
       this.ammoInterval = 500
       this.gameOver = false
       this.score = 0
-      this.winningScore = 200
+      this.winningScore = 50
       this.gameTime = 0
-      this.timeLimit = 45000
+      this.timeLimit = 15000
       this.speed = 1
-      this.debug = true
+      this.debug = false
     }
     update(deltaTime) {
       if (!this.gameOver) this.gameTime += deltaTime
@@ -342,10 +391,23 @@ window.addEventListener("load", function () {
       } else {
         this.ammoTimer += deltaTime
       }
+      this.particles.forEach((particle) => particle.update())
+      this.particles = this.particles.filter(
+        (particle) => !particle.markedForDestruction
+      )
       this.enemies.forEach((enemy) => {
         enemy.update()
         if (this.checkCollision(this.player, enemy)) {
           enemy.markedForDestruction = true
+          for (let i = 0; i < 10; i++) {
+            this.particles.push(
+              new Particle(
+                this,
+                enemy.x + enemy.width * 0.5,
+                enemy.y + enemy.height * 0.5
+              )
+            )
+          }
           if (enemy.type === "lucky") this.player.enterPowerUp()
           else this.score--
         }
@@ -353,6 +415,13 @@ window.addEventListener("load", function () {
           if (this.checkCollision(projectile, enemy)) {
             enemy.lives--
             projectile.markedForDestruction = true
+            this.particles.push(
+              new Particle(
+                this,
+                enemy.x + enemy.width * 0.5,
+                enemy.y + enemy.height * 0.5
+              )
+            )
             if (enemy.lives <= 0) {
               enemy.markedForDestruction = true
               if (!this.gameOver) this.score += enemy.score
@@ -373,6 +442,7 @@ window.addEventListener("load", function () {
       this.background.draw(context)
       this.player.draw(context)
       this.UI.draw(context)
+      this.particles.forEach((particle) => particle.draw(context))
       this.enemies.forEach((enemy) => {
         enemy.draw(context)
       })
