@@ -470,7 +470,7 @@ window.addEventListener("load", function () {
       this.enemyTimer = 0
       this.enemyInterval = 2000
       this.ammo = 20
-      this.maxAmmo = 50
+      this.maxAmmo = 40
       this.ammoTimer = 0
       this.ammoInterval = 350
       this.gameOver = false
