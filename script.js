@@ -1,7 +1,7 @@
 window.addEventListener("load", function () {
   const canvas = document.getElementById("canvas-one")
   const ctx = canvas.getContext("2d")
-  canvas.width = 1000
+  canvas.width = 1200
   canvas.height = 500
 
   class InputHandler {
@@ -475,9 +475,9 @@ window.addEventListener("load", function () {
       this.ammoInterval = 350
       this.gameOver = false
       this.score = 0
-      this.winningScore = 120
+      this.winningScore = 200
       this.gameTime = 0
-      this.timeLimit = 40000
+      this.timeLimit = 60000
       this.speed = 1
       this.debug = false
     }
